@@ -116,6 +116,10 @@ class _PostScreenState extends State<PostScreen> {
     }
 
     if (!isImage()) {
+      if (_platform == TargetPlatform.linux) {
+        return;
+      }
+
       _videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(widget.post.fileUrl),
       );
@@ -144,9 +148,16 @@ class _PostScreenState extends State<PostScreen> {
           Padding(
             padding: const EdgeInsets.all(4.0),
             child: IconButton(
-              onPressed: () => _panelController.open(),
+              onPressed: () =>
+                  _panelController.isAttached && _panelController.isPanelClosed
+                      ? _panelController.open()
+                      : _panelController.close(),
               iconSize: 32.0,
-              icon: const Icon(Icons.upgrade_outlined),
+              icon: Icon(
+                _panelController.isAttached && _panelController.isPanelClosed
+                    ? Icons.arrow_drop_down_outlined
+                    : Icons.arrow_drop_up_outlined,
+              ),
             ),
           ),
           Padding(
@@ -181,7 +192,7 @@ class _PostScreenState extends State<PostScreen> {
                     PhotoView(
                       imageProvider: NetworkImage(widget.post.fileUrl),
                     ),
-                  if (!isImage())
+                  if (!isImage() && _platform == TargetPlatform.android)
                     Stack(
                       children: [
                         VideoPlayer(
@@ -193,6 +204,10 @@ class _PostScreenState extends State<PostScreen> {
                         ),
                       ],
                     ),
+                  if (!isImage() && _platform == TargetPlatform.linux)
+                    const Center(
+                      child: Text("Can't show video in this platform"),
+                    )
                 ].first,
               ),
             ),

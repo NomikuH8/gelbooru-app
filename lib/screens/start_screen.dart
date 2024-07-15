@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gelbooru/apis/post_api.dart';
 import 'package:gelbooru/classes/post.dart';
@@ -37,7 +39,15 @@ class _StartScreenState extends State<StartScreen> {
   }
 
   int _getGridCount() {
-    var count = (MediaQuery.of(context).size.width ~/ 250).toInt();
+    final platform =
+        Platform.isAndroid ? TargetPlatform.android : TargetPlatform.linux;
+    var divider = 250;
+
+    if (platform == TargetPlatform.android) {
+      divider = 100;
+    }
+
+    var count = (MediaQuery.of(context).size.width ~/ divider).toInt();
 
     if (count == 0) {
       count = 1;
@@ -77,14 +87,15 @@ class _StartScreenState extends State<StartScreen> {
               ),
             ),
             const SizedBox(
-              height: 10,
+              height: 8.0,
             ),
             Expanded(
               child: PagedGridView<int, Post>(
                 pagingController: _pagingController,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: _getGridCount(),
-                ),
+                    crossAxisCount: _getGridCount(),
+                    crossAxisSpacing: 8.0,
+                    mainAxisSpacing: 8.0),
                 builderDelegate: PagedChildBuilderDelegate(
                   itemBuilder: (context, item, index) =>
                       PostGridItem(post: item),
