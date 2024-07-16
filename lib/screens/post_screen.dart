@@ -4,9 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:gelbooru/classes/post.dart';
 import 'package:gelbooru/components/post_sliding_panel.dart';
+import 'package:gelbooru/constants/shared_preferences_constants.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:video_player/video_player.dart';
 
@@ -23,20 +25,41 @@ class _PostScreenState extends State<PostScreen> {
   var _videoPlayerController = VideoPlayerController.asset("");
   var _downloadError = false;
   var _downloaded = false;
+  var _loadSample = true;
   var _loading = false;
   late TargetPlatform? _platform;
   final _panelController = PanelController();
 
-  bool isImage() {
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      _loadSample =
+          prefs.getBool(SharedPreferencesConstants.preferSamplesKey) ?? false;
+    });
+  }
+
+  String _getImageLink() {
+    if (_loadSample && widget.post.sampleUrl.isNotEmpty) {
+      return widget.post.sampleUrl;
+    }
+
+    return widget.post.fileUrl;
+  }
+
+  bool _isImage() {
     final image = widget.post.image;
 
     return !(image.endsWith("mp4") || image.endsWith("webm"));
   }
 
   Future<String?> _prepareSaveDirectory() async {
-    final downloadDirectory = await getDownloadsDirectory();
+    final prefs = await SharedPreferences.getInstance();
+    final downloadDirectory =
+        prefs.getString(SharedPreferencesConstants.downloadFolderKey) ??
+            (await getDownloadsDirectory())!.path;
 
-    return downloadDirectory?.path;
+    return downloadDirectory;
   }
 
   Future<bool> _checkPermission() async {
@@ -45,19 +68,23 @@ class _PostScreenState extends State<PostScreen> {
     }
 
     final status = await Permission.storage.status;
-    if (status == PermissionStatus.granted) {
+    final newStatus = await Permission.manageExternalStorage.status;
+    if (status == PermissionStatus.granted ||
+        newStatus == PermissionStatus.granted) {
       return true;
     }
 
     final result = await Permission.storage.request();
-    if (result == PermissionStatus.granted) {
+    final newResult = await Permission.manageExternalStorage.request();
+    if (result == PermissionStatus.granted ||
+        newResult == PermissionStatus.granted) {
       return true;
     }
 
     return false;
   }
 
-  void _downloadImage() async {
+  Future<void> _downloadImage() async {
     _downloadError = false;
 
     if (_downloaded || _loading) {
@@ -76,9 +103,17 @@ class _PostScreenState extends State<PostScreen> {
       });
 
       final post = widget.post;
+      var imageName = post.image;
+      var downloadLink = post.fileUrl;
+
+      if (_loadSample && post.sampleUrl.isNotEmpty) {
+        imageName = "sample_${post.image}";
+        downloadLink = post.sampleUrl;
+      }
+
       await Dio().download(
-        post.fileUrl,
-        "$saveDirectory/${post.image}",
+        downloadLink,
+        "$saveDirectory/$imageName",
       );
 
       setState(() {
@@ -105,9 +140,21 @@ class _PostScreenState extends State<PostScreen> {
     return Icons.download_outlined;
   }
 
+  Future<void> toggleSlidingPanel() async {
+    if (_panelController.isAttached && _panelController.isPanelOpen) {
+      await _panelController.close();
+    } else {
+      await _panelController.open();
+    }
+
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+
+    _loadSettings();
 
     if (Platform.isAndroid) {
       _platform = TargetPlatform.android;
@@ -115,7 +162,7 @@ class _PostScreenState extends State<PostScreen> {
       _platform = TargetPlatform.linux;
     }
 
-    if (!isImage()) {
+    if (!_isImage()) {
       if (_platform == TargetPlatform.linux) {
         return;
       }
@@ -148,13 +195,10 @@ class _PostScreenState extends State<PostScreen> {
           Padding(
             padding: const EdgeInsets.all(4.0),
             child: IconButton(
-              onPressed: () =>
-                  _panelController.isAttached && _panelController.isPanelClosed
-                      ? _panelController.open()
-                      : _panelController.close(),
+              onPressed: toggleSlidingPanel,
               iconSize: 32.0,
               icon: Icon(
-                _panelController.isAttached && _panelController.isPanelClosed
+                _panelController.isAttached && _panelController.isPanelOpen
                     ? Icons.arrow_drop_down_outlined
                     : Icons.arrow_drop_up_outlined,
               ),
@@ -188,23 +232,28 @@ class _PostScreenState extends State<PostScreen> {
                 ),
                 panel: PostSlidingPanel(post: widget.post),
                 body: <Widget>[
-                  if (isImage())
+                  if (_isImage())
                     PhotoView(
-                      imageProvider: NetworkImage(widget.post.fileUrl),
+                      imageProvider: NetworkImage(_getImageLink()),
                     ),
-                  if (!isImage() && _platform == TargetPlatform.android)
+                  if (!_isImage() && _platform == TargetPlatform.android)
                     Stack(
                       children: [
-                        VideoPlayer(
-                          _videoPlayerController,
-                        ),
+                        if (_videoPlayerController.value.isInitialized)
+                          AspectRatio(
+                            aspectRatio:
+                                _videoPlayerController.value.aspectRatio,
+                            child: VideoPlayer(
+                              _videoPlayerController,
+                            ),
+                          ),
                         VideoProgressIndicator(
                           _videoPlayerController,
                           allowScrubbing: true,
                         ),
                       ],
                     ),
-                  if (!isImage() && _platform == TargetPlatform.linux)
+                  if (!_isImage() && _platform == TargetPlatform.linux)
                     const Center(
                       child: Text("Can't show video in this platform"),
                     )

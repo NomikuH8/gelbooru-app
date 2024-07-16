@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gelbooru/apis/post_api.dart';
 import 'package:gelbooru/classes/post.dart';
+import 'package:gelbooru/components/app_drawer.dart';
 import 'package:gelbooru/components/post_grid_item.dart';
 import 'package:gelbooru/constants/api_constants.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -70,6 +71,7 @@ class _StartScreenState extends State<StartScreen> {
       appBar: AppBar(
         title: const Text("Gelbooru"),
       ),
+      drawer: const AppDrawer(),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
