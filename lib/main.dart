@@ -17,7 +17,9 @@ class MainApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: const StartScreen(),
+      home: const StartScreen(
+        defaultSearch: "",
+      ),
     );
   }
 }

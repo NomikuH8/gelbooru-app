@@ -26,6 +26,7 @@ class _PostScreenState extends State<PostScreen> {
   var _downloadError = false;
   var _downloaded = false;
   var _loadSample = true;
+  var _showAppBar = true;
   var _loading = false;
   late TargetPlatform? _platform;
   final _panelController = PanelController();
@@ -191,6 +192,7 @@ class _PostScreenState extends State<PostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: _showAppBar ? 56.0 : 0,
         actions: [
           Padding(
             padding: const EdgeInsets.all(4.0),
@@ -216,42 +218,49 @@ class _PostScreenState extends State<PostScreen> {
           )
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SlidingUpPanel(
-                controller: _panelController,
-                backdropEnabled: true,
-                backdropOpacity: 0.5,
-                minHeight: 0.0,
-                maxHeight: 800.0,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(15.0),
-                  topRight: Radius.circular(15.0),
-                ),
-                panel: PostSlidingPanel(post: widget.post),
-                body: <Widget>[
+      body: Column(
+        children: [
+          Expanded(
+            child: SlidingUpPanel(
+              controller: _panelController,
+              backdropEnabled: true,
+              backdropOpacity: 0.5,
+              minHeight: 0.0,
+              maxHeight: 800.0,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(15.0),
+                topRight: Radius.circular(15.0),
+              ),
+              panel: PostSlidingPanel(post: widget.post),
+              body: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showAppBar = !_showAppBar;
+                  });
+                },
+                child: <Widget>[
                   if (_isImage())
                     PhotoView(
                       imageProvider: NetworkImage(_getImageLink()),
                     ),
                   if (!_isImage() && _platform == TargetPlatform.android)
-                    Stack(
-                      children: [
-                        if (_videoPlayerController.value.isInitialized)
-                          AspectRatio(
-                            aspectRatio:
-                                _videoPlayerController.value.aspectRatio,
-                            child: VideoPlayer(
-                              _videoPlayerController,
+                    Center(
+                      child: Stack(
+                        children: [
+                          if (_videoPlayerController.value.isInitialized)
+                            AspectRatio(
+                              aspectRatio:
+                                  _videoPlayerController.value.aspectRatio,
+                              child: VideoPlayer(
+                                _videoPlayerController,
+                              ),
                             ),
+                          VideoProgressIndicator(
+                            _videoPlayerController,
+                            allowScrubbing: true,
                           ),
-                        VideoProgressIndicator(
-                          _videoPlayerController,
-                          allowScrubbing: true,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   if (!_isImage() && _platform == TargetPlatform.linux)
                     const Center(
@@ -260,8 +269,8 @@ class _PostScreenState extends State<PostScreen> {
                 ].first,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

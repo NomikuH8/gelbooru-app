@@ -15,11 +15,21 @@ class AppDrawer extends StatelessWidget {
           const ListTile(),
           ListTile(
             title: const Text("Home"),
-            onTap: () => Get.off(() => const StartScreen()),
+            onTap: () {
+              if (Get.currentRoute == "StartScreen") {
+                return;
+              }
+
+              Get.off(
+                () => const StartScreen(
+                  defaultSearch: "",
+                ),
+              );
+            },
           ),
           ListTile(
             title: const Text("Settings"),
-            onTap: () => Get.off(() => const ConfigScreen()),
+            onTap: () => Get.to(() => const ConfigScreen()),
           )
         ],
       ),
