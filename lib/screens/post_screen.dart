@@ -1,15 +1,18 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gelbooru/apis/tag_api.dart';
 import 'package:gelbooru/classes/post.dart';
+import 'package:gelbooru/classes/tag.dart';
 import 'package:gelbooru/components/post_sliding_panel.dart';
 import 'package:gelbooru/constants/shared_preferences_constants.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:video_player/video_player.dart';
 
 class PostScreen extends StatefulWidget {
@@ -23,13 +26,13 @@ class PostScreen extends StatefulWidget {
 
 class _PostScreenState extends State<PostScreen> {
   var _videoPlayerController = VideoPlayerController.asset("");
+  var _tags = <Tag>[];
   var _downloadError = false;
   var _downloaded = false;
   var _loadSample = true;
   var _showAppBar = true;
   var _loading = false;
   late TargetPlatform? _platform;
-  final _panelController = PanelController();
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -129,6 +132,14 @@ class _PostScreenState extends State<PostScreen> {
     }
   }
 
+  Future<void> _getTagInformation() async {
+    _tags = await TagApi.fetchTagsForPost(widget.post.tags);
+    _tags.sort(
+      (a, b) => a.type - b.type,
+    );
+    _tags = _tags.reversed.toList();
+  }
+
   IconData _getDownloadIcon() {
     if (_downloadError) {
       return Icons.close_outlined;
@@ -141,14 +152,15 @@ class _PostScreenState extends State<PostScreen> {
     return Icons.download_outlined;
   }
 
-  Future<void> toggleSlidingPanel() async {
-    if (_panelController.isAttached && _panelController.isPanelOpen) {
-      await _panelController.close();
-    } else {
-      await _panelController.open();
-    }
-
-    setState(() {});
+  void toggleSlidingPanel() {
+    showMaterialModalBottomSheet(
+      expand: true,
+      context: context,
+      builder: (context) => PostSlidingPanel(
+        post: widget.post,
+        tags: _tags,
+      ),
+    );
   }
 
   @override
@@ -156,6 +168,7 @@ class _PostScreenState extends State<PostScreen> {
     super.initState();
 
     _loadSettings();
+    _getTagInformation();
 
     if (Platform.isAndroid) {
       _platform = TargetPlatform.android;
@@ -199,10 +212,8 @@ class _PostScreenState extends State<PostScreen> {
             child: IconButton(
               onPressed: toggleSlidingPanel,
               iconSize: 32.0,
-              icon: Icon(
-                _panelController.isAttached && _panelController.isPanelOpen
-                    ? Icons.arrow_drop_down_outlined
-                    : Icons.arrow_drop_up_outlined,
+              icon: const Icon(
+                Icons.arrow_drop_up_outlined,
               ),
             ),
           ),
@@ -221,53 +232,41 @@ class _PostScreenState extends State<PostScreen> {
       body: Column(
         children: [
           Expanded(
-            child: SlidingUpPanel(
-              controller: _panelController,
-              backdropEnabled: true,
-              backdropOpacity: 0.5,
-              minHeight: 0.0,
-              maxHeight: 800.0,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(15.0),
-                topRight: Radius.circular(15.0),
-              ),
-              panel: PostSlidingPanel(post: widget.post),
-              body: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showAppBar = !_showAppBar;
-                  });
-                },
-                child: <Widget>[
-                  if (_isImage())
-                    PhotoView(
-                      imageProvider: NetworkImage(_getImageLink()),
-                    ),
-                  if (!_isImage() && _platform == TargetPlatform.android)
-                    Center(
-                      child: Stack(
-                        children: [
-                          if (_videoPlayerController.value.isInitialized)
-                            AspectRatio(
-                              aspectRatio:
-                                  _videoPlayerController.value.aspectRatio,
-                              child: VideoPlayer(
-                                _videoPlayerController,
-                              ),
+            child: GestureDetector(
+              onLongPress: () {
+                setState(() {
+                  _showAppBar = !_showAppBar;
+                });
+              },
+              child: <Widget>[
+                if (_isImage())
+                  PhotoView(
+                    imageProvider: NetworkImage(_getImageLink()),
+                  ),
+                if (!_isImage() && _platform == TargetPlatform.android)
+                  Center(
+                    child: Stack(
+                      children: [
+                        if (_videoPlayerController.value.isInitialized)
+                          AspectRatio(
+                            aspectRatio:
+                                _videoPlayerController.value.aspectRatio,
+                            child: VideoPlayer(
+                              _videoPlayerController,
                             ),
-                          VideoProgressIndicator(
-                            _videoPlayerController,
-                            allowScrubbing: true,
                           ),
-                        ],
-                      ),
+                        VideoProgressIndicator(
+                          _videoPlayerController,
+                          allowScrubbing: true,
+                        ),
+                      ],
                     ),
-                  if (!_isImage() && _platform == TargetPlatform.linux)
-                    const Center(
-                      child: Text("Can't show video in this platform"),
-                    )
-                ].first,
-              ),
+                  ),
+                if (!_isImage() && _platform == TargetPlatform.linux)
+                  const Center(
+                    child: Text("Can't show video in this platform"),
+                  )
+              ].first,
             ),
           ),
         ],
