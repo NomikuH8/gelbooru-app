@@ -8,12 +8,13 @@ import 'package:gelbooru/classes/post.dart';
 import 'package:gelbooru/classes/tag.dart';
 import 'package:gelbooru/components/post_sliding_panel.dart';
 import 'package:gelbooru/constants/shared_preferences_constants.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_player/video_player.dart';
 
 class PostScreen extends StatefulWidget {
   const PostScreen({super.key, required this.post});
@@ -25,13 +26,16 @@ class PostScreen extends StatefulWidget {
 }
 
 class _PostScreenState extends State<PostScreen> {
-  var _videoPlayerController = VideoPlayerController.asset("");
+  final _defaultAnimationDuration = const Duration(milliseconds: 200);
+  final _bottomBarHeight = 56.0;
   var _tags = <Tag>[];
   var _downloadError = false;
   var _downloaded = false;
   var _loadSample = true;
   var _showAppBar = true;
   var _loading = false;
+  late final _player = Player();
+  late final _videoController = VideoController(_player);
   late TargetPlatform? _platform;
 
   Future<void> _loadSettings() async {
@@ -156,6 +160,7 @@ class _PostScreenState extends State<PostScreen> {
     showMaterialModalBottomSheet(
       expand: true,
       context: context,
+      backgroundColor: const Color.fromRGBO(0, 0, 0, 0.5),
       builder: (context) => PostSlidingPanel(
         post: widget.post,
         tags: _tags,
@@ -177,96 +182,82 @@ class _PostScreenState extends State<PostScreen> {
     }
 
     if (!_isImage()) {
-      if (_platform == TargetPlatform.linux) {
-        return;
-      }
-
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.post.fileUrl),
+      _player.open(
+        Media(widget.post.fileUrl),
       );
-      _videoPlayerController.addListener(() {
-        setState(() {});
-      });
 
-      _videoPlayerController.setLooping(true);
-      _videoPlayerController.initialize().then((_) => setState(() {}));
-
-      _videoPlayerController.play();
+      _player.setVolume(70.0);
+      _player.setPlaylistMode(PlaylistMode.single);
     }
   }
 
   @override
   void dispose() {
-    _videoPlayerController.dispose();
+    _player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: _showAppBar ? 56.0 : 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: IconButton(
-              onPressed: toggleSlidingPanel,
-              iconSize: 32.0,
-              icon: const Icon(
-                Icons.arrow_drop_up_outlined,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: IconButton(
-              iconSize: 32.0,
-              onPressed: _downloadImage,
-              icon: _loading
-                  ? const CircularProgressIndicator()
-                  : Icon(_getDownloadIcon()),
-            ),
-          )
-        ],
-      ),
       body: Column(
         children: [
           Expanded(
-            child: GestureDetector(
-              onLongPress: () {
-                setState(() {
-                  _showAppBar = !_showAppBar;
-                });
-              },
-              child: <Widget>[
-                if (_isImage())
-                  PhotoView(
-                    imageProvider: NetworkImage(_getImageLink()),
-                  ),
-                if (!_isImage() && _platform == TargetPlatform.android)
-                  Center(
-                    child: Stack(
-                      children: [
-                        if (_videoPlayerController.value.isInitialized)
-                          AspectRatio(
-                            aspectRatio:
-                                _videoPlayerController.value.aspectRatio,
-                            child: VideoPlayer(
-                              _videoPlayerController,
-                            ),
-                          ),
-                        VideoProgressIndicator(
-                          _videoPlayerController,
-                          allowScrubbing: true,
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onLongPress: () {
+                    setState(() {
+                      _showAppBar = !_showAppBar;
+                    });
+                  },
+                  child: <Widget>[
+                    if (_isImage())
+                      PhotoView(
+                        minScale: PhotoViewComputedScale.contained,
+                        imageProvider: NetworkImage(_getImageLink()),
+                      ),
+                    if (!_isImage())
+                      Center(
+                        child: Video(
+                          controls: (state) => MaterialVideoControls(state),
+                          controller: _videoController,
                         ),
-                      ],
-                    ),
+                      ),
+                  ].first,
+                ),
+                AnimatedContainer(
+                  curve: Curves.fastOutSlowIn,
+                  height: _showAppBar ? _bottomBarHeight : 0.0,
+                  width: MediaQuery.of(context).size.width,
+                  duration: _defaultAnimationDuration,
+                  child: AppBar(
+                    backgroundColor: const Color.fromRGBO(0, 0, 0, 0.3),
+                    actions: [
+                      Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: IconButton(
+                          onPressed: toggleSlidingPanel,
+                          iconSize: 36.0,
+                          icon: const Icon(
+                            Icons.arrow_drop_up_outlined,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: IconButton(
+                          iconSize: 36.0,
+                          onPressed: _downloadImage,
+                          icon: _loading
+                              ? const CircularProgressIndicator()
+                              : Icon(_getDownloadIcon()),
+                        ),
+                      )
+                    ],
                   ),
-                if (!_isImage() && _platform == TargetPlatform.linux)
-                  const Center(
-                    child: Text("Can't show video in this platform"),
-                  )
-              ].first,
+                ),
+              ],
             ),
           ),
         ],

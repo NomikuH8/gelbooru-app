@@ -24,13 +24,13 @@ class _PostSlidingPanelState extends State<PostSlidingPanel> {
     // 5: metadata
 
     return switch (tag.type) {
-      0 => Colors.blue[800],
-      1 => Colors.red[800],
-      3 => Colors.pink[400],
-      4 => Colors.green[400],
-      5 => Colors.amber[800],
-      _ => Colors.cyan[800]
-    }!;
+      0 => const Color.fromRGBO(21, 101, 192, 0.7),
+      1 => const Color.fromRGBO(198, 40, 40, 0.7),
+      3 => const Color.fromRGBO(236, 64, 122, 0.7),
+      4 => const Color.fromRGBO(102, 187, 106, 0.7),
+      5 => const Color.fromRGBO(255, 143, 0, 0.7),
+      _ => const Color.fromRGBO(0, 131, 143, 0.7)
+    };
   }
 
   @override

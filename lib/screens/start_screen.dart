@@ -8,11 +8,10 @@ import 'package:gelbooru/components/app_drawer.dart';
 import 'package:gelbooru/components/post_grid_item.dart';
 import 'package:gelbooru/components/tag_search_raw.dart';
 import 'package:gelbooru/constants/api_constants.dart';
-import 'package:gelbooru/constants/shared_preferences_constants.dart';
+import 'package:gelbooru/constants/color_constants.dart';
 import 'package:gelbooru/screens/search_helper_screen.dart';
 import 'package:get/get.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class StartScreen extends StatefulWidget {
   const StartScreen({super.key, required this.defaultSearch});
@@ -26,7 +25,6 @@ class StartScreen extends StatefulWidget {
 class _StartScreenState extends State<StartScreen> {
   final _pagingController = PagingController<int, Post>(firstPageKey: 0);
   var _currentSearch = "";
-  var _rawSearch = true;
 
   void _searchTags(String value) {
     _currentSearch = value;
@@ -66,29 +64,11 @@ class _StartScreenState extends State<StartScreen> {
     return count;
   }
 
-  Future<void> _updateRawSearchSharedPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-      SharedPreferencesConstants.preferRawSearchKey,
-      _rawSearch,
-    );
-  }
-
-  Future<void> _loadRawSearchSharedPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _rawSearch =
-          prefs.getBool(SharedPreferencesConstants.preferRawSearchKey) ?? true;
-    });
-  }
-
   @override
   void initState() {
     super.initState();
 
     _currentSearch = widget.defaultSearch;
-
-    _loadRawSearchSharedPreference();
 
     _pagingController.addPageRequestListener((pageKey) {
       _fetchPage(pageKey);
@@ -99,13 +79,17 @@ class _StartScreenState extends State<StartScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: ColorConstants.primaryColor,
         title: const Text("Gelbooru"),
         actions: [
           IconButton(
             onPressed: () {
               _pagingController.refresh();
             },
-            icon: const Icon(Icons.refresh_outlined),
+            icon: const Icon(
+              size: 36.0,
+              Icons.refresh_outlined,
+            ),
           )
         ],
       ),
@@ -116,32 +100,11 @@ class _StartScreenState extends State<StartScreen> {
           children: [
             Row(
               children: [
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _rawSearch = !_rawSearch;
-                    });
-                    _updateRawSearchSharedPreference();
-                  },
-                  icon: _rawSearch
-                      ? const Icon(Icons.raw_on_outlined)
-                      : const Icon(Icons.raw_off),
-                ),
-                const SizedBox(
-                  width: 8.0,
-                ),
                 Expanded(
                   child: TagSearchRaw(
                     defaultText: widget.defaultSearch,
                     onSubmitted: _searchTags,
                   ),
-                  // child: _rawSearch
-                  //     ? TagSearchRaw(
-                  //         onSubmitted: _searchTags,
-                  //       )
-                  //     : TagSearchAutocomplete(
-                  //         onSubmitted: _searchTags,
-                  //       ),
                 ),
                 const SizedBox(
                   width: 8.0,
