@@ -198,6 +198,7 @@ class _PostScreenState extends State<PostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: _showAppBar ? 56.0 : 0.0,
         backgroundColor: const Color.fromRGBO(0, 0, 0, 0.3),
