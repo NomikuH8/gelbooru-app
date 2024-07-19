@@ -26,8 +26,6 @@ class PostScreen extends StatefulWidget {
 }
 
 class _PostScreenState extends State<PostScreen> {
-  final _defaultAnimationDuration = const Duration(milliseconds: 200);
-  final _bottomBarHeight = 56.0;
   var _tags = <Tag>[];
   var _downloadError = false;
   var _downloaded = false;
@@ -200,64 +198,55 @@ class _PostScreenState extends State<PostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: _showAppBar ? 56.0 : 0.0,
+        backgroundColor: const Color.fromRGBO(0, 0, 0, 0.3),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: IconButton(
+              onPressed: toggleSlidingPanel,
+              iconSize: 36.0,
+              icon: const Icon(
+                Icons.arrow_drop_up_outlined,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: IconButton(
+              iconSize: 36.0,
+              onPressed: _downloadImage,
+              icon: _loading
+                  ? const CircularProgressIndicator()
+                  : Icon(_getDownloadIcon()),
+            ),
+          )
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
-            child: Stack(
-              children: [
-                GestureDetector(
-                  onLongPress: () {
-                    setState(() {
-                      _showAppBar = !_showAppBar;
-                    });
-                  },
-                  child: <Widget>[
-                    if (_isImage())
-                      PhotoView(
-                        minScale: PhotoViewComputedScale.contained,
-                        imageProvider: NetworkImage(_getImageLink()),
-                      ),
-                    if (!_isImage())
-                      Center(
-                        child: Video(
-                          controls: (state) => MaterialVideoControls(state),
-                          controller: _videoController,
-                        ),
-                      ),
-                  ].first,
-                ),
-                AnimatedContainer(
-                  curve: Curves.fastOutSlowIn,
-                  height: _showAppBar ? _bottomBarHeight : 0.0,
-                  width: MediaQuery.of(context).size.width,
-                  duration: _defaultAnimationDuration,
-                  child: AppBar(
-                    backgroundColor: const Color.fromRGBO(0, 0, 0, 0.3),
-                    actions: [
-                      Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: IconButton(
-                          onPressed: toggleSlidingPanel,
-                          iconSize: 36.0,
-                          icon: const Icon(
-                            Icons.arrow_drop_up_outlined,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: IconButton(
-                          iconSize: 36.0,
-                          onPressed: _downloadImage,
-                          icon: _loading
-                              ? const CircularProgressIndicator()
-                              : Icon(_getDownloadIcon()),
-                        ),
-                      )
-                    ],
+            child: GestureDetector(
+              onLongPress: () {
+                setState(() {
+                  _showAppBar = !_showAppBar;
+                });
+              },
+              child: <Widget>[
+                if (_isImage())
+                  PhotoView(
+                    minScale: PhotoViewComputedScale.contained,
+                    imageProvider: NetworkImage(_getImageLink()),
                   ),
-                ),
-              ],
+                if (!_isImage())
+                  Center(
+                    child: Video(
+                      controls: (state) => MaterialVideoControls(state),
+                      controller: _videoController,
+                    ),
+                  ),
+              ].first,
             ),
           ),
         ],
