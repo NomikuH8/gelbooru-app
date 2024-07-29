@@ -15,10 +15,7 @@ class _SearchHelperScreenState extends State<SearchHelperScreen> {
   final _finalSearchController = TextEditingController();
   var _dropdownOrderByValue = SearchConstants.sortOptions.first;
   var _dropdownOrderingValue = "asc";
-
-  double _getDeviceWidth() {
-    return MediaQuery.of(context).size.width;
-  }
+  var _dropdownRatingValue = "General";
 
   @override
   Widget build(BuildContext context) {
@@ -95,56 +92,110 @@ class _SearchHelperScreenState extends State<SearchHelperScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      DropdownMenu(
-                        label: const Text("Order by"),
-                        initialSelection: _dropdownOrderByValue,
-                        onSelected: (value) {
-                          setState(() {
-                            _dropdownOrderByValue = value!;
-                          });
-                        },
-                        dropdownMenuEntries: SearchConstants.sortOptions.map(
-                          (value) {
-                            return DropdownMenuEntry<String>(
-                              value: value,
-                              label: value,
-                            );
+                      Expanded(
+                        child: DropdownMenu(
+                          width: (MediaQuery.of(context).size.width / 3) - 16.0,
+                          label: const Text("Order by"),
+                          initialSelection: _dropdownOrderByValue,
+                          onSelected: (value) {
+                            setState(() {
+                              _dropdownOrderByValue = value!;
+                            });
                           },
-                        ).toList(),
-                      ),
-                      const SizedBox(
-                        width: 8.0,
-                      ),
-                      DropdownMenu(
-                        label: const Text("Ordering"),
-                        initialSelection: _dropdownOrderingValue,
-                        onSelected: (value) {
-                          setState(() {
-                            _dropdownOrderingValue = value!;
-                          });
-                        },
-                        dropdownMenuEntries: ["asc", "desc"].map(
-                          (value) {
-                            return DropdownMenuEntry(
+                          dropdownMenuEntries: SearchConstants.sortOptions.map(
+                            (value) {
+                              return DropdownMenuEntry<String>(
                                 value: value,
-                                label: value == "asc"
-                                    ? "Ascending"
-                                    : "Descending");
-                          },
-                        ).toList(),
+                                label: value,
+                              );
+                            },
+                          ).toList(),
+                        ),
                       ),
                       const SizedBox(
                         width: 8.0,
                       ),
-                      ElevatedButton(
-                        child: const Text("Add"),
-                        onPressed: () {
-                          _finalSearchController.text +=
-                              " sort:$_dropdownOrderByValue:$_dropdownOrderingValue";
-                        },
+                      Expanded(
+                        child: DropdownMenu(
+                          width: (MediaQuery.of(context).size.width / 3) - 16.0,
+                          label: const Text("Ordering"),
+                          initialSelection: _dropdownOrderingValue,
+                          onSelected: (value) {
+                            setState(() {
+                              _dropdownOrderingValue = value!;
+                            });
+                          },
+                          dropdownMenuEntries: ["asc", "desc"].map(
+                            (value) {
+                              return DropdownMenuEntry(
+                                  value: value,
+                                  label: value == "asc"
+                                      ? "Ascending"
+                                      : "Descending");
+                            },
+                          ).toList(),
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 8.0,
+                      ),
+                      Expanded(
+                        child: ElevatedButton(
+                          child: const Text("Add"),
+                          onPressed: () {
+                            _finalSearchController.text +=
+                                " sort:$_dropdownOrderByValue:$_dropdownOrderingValue";
+                          },
+                        ),
                       )
                     ],
-                  )
+                  ),
+                  const SizedBox(
+                    height: 8.0,
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownMenu(
+                          onSelected: (value) {
+                            setState(() {
+                              _dropdownRatingValue = value ?? "";
+                            });
+                          },
+                          width: (MediaQuery.of(context).size.width / 2) - 16.0,
+                          label: const Text("Rating"),
+                          dropdownMenuEntries: [
+                            "General",
+                            "Questionable",
+                            "Sensitive",
+                            "Explicit"
+                          ].map(
+                            (rating) {
+                              return DropdownMenuEntry(
+                                value: rating.toLowerCase(),
+                                label: rating,
+                              );
+                            },
+                          ).toList(),
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 8.0,
+                      ),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed:
+                              _finalSearchController.text.contains("rating:")
+                                  ? null
+                                  : () {
+                                      _finalSearchController.text +=
+                                          " rating:$_dropdownRatingValue";
+                                    },
+                          child: const Text("Add"),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             )

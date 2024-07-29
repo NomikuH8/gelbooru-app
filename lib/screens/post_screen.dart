@@ -137,7 +137,13 @@ class _PostScreenState extends State<PostScreen> {
   Future<void> _getTagInformation() async {
     _tags = await TagApi.fetchTagsForPost(widget.post.tags);
     _tags.sort(
-      (a, b) => a.type - b.type,
+      (a, b) {
+        if (a.type == b.type) {
+          return -a.name.compareTo(b.name);
+        }
+
+        return a.type - b.type;
+      },
     );
     _tags = _tags.reversed.toList();
   }
