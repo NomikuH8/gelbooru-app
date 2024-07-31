@@ -28,7 +28,7 @@ class TagApi {
       "${ApiConstants.baseUrl}/index.php?${query.join("&")}",
     );
 
-    final response = await http.get(uri);
+    final response = await http.get(uri, headers: ApiConstants.headers);
 
     if (response.statusCode != 200) {
       return [];

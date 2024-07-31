@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PostScreen extends StatefulWidget {
   const PostScreen({super.key, required this.post});
@@ -35,6 +36,14 @@ class _PostScreenState extends State<PostScreen> {
   late final _player = Player();
   late final _videoController = VideoController(_player);
   late TargetPlatform? _platform;
+
+  Future<void> _launchUrl() async {
+    final url = Uri.parse(widget.post.source);
+    if (!await launchUrl(url)) {
+      const snackBar = SnackBar(content: Text("Couldn't open source"));
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }
+  }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -209,6 +218,13 @@ class _PostScreenState extends State<PostScreen> {
         toolbarHeight: _showAppBar ? 56.0 : 0.0,
         backgroundColor: const Color.fromRGBO(0, 0, 0, 0.3),
         actions: [
+          Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: IconButton(
+              icon: const Icon(Icons.launch_outlined),
+              onPressed: _launchUrl,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(4.0),
             child: IconButton(
