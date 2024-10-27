@@ -14,7 +14,7 @@ class PostApi {
       "page=dapi",
       "s=post",
       "q=index",
-      if (searchTags.isNotEmpty) "tags=$searchTags",
+      "tags=rating:general+$searchTags",
       "pid=$pageId",
       "limit=${ApiConstants.limit}",
       "json=${ApiConstants.json}",
